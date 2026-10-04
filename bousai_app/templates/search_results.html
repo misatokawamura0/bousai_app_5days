@@ -1,19 +1,267 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>検索結果</h2>
+<style>
+  .result-header {
+    margin: 0 0 20px;
+    font-size: 1.8rem;
+    color: #0b4d87;
+  }
+
+  .result-summary {
+    margin-bottom: 18px;
+    color: #50657b;
+    font-size: 0.95rem;
+  }
+
+  .results-list {
+    display: grid;
+    gap: 16px;
+  }
+
+  .shelter-card {
+    background: #ffffff;
+    border: 1px solid #dfe8ee;
+    border-radius: 14px;
+    padding: 18px 18px 14px;
+    box-shadow: 0 2px 6px rgba(17, 34, 49, 0.04);
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .card-header h3 {
+    margin: 6px 0 0;
+    color: #153b5d;
+    font-size: 1.3rem;
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .status-available {
+    background: #eafaf1;
+    color: #1d8c57;
+  }
+
+  .status-busy {
+    background: #fff4d8;
+    color: #a36a00;
+  }
+
+  .status-full {
+    background: #fde7e7;
+    color: #c93434;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(170px, 1fr));
+    gap: 12px 18px;
+    margin: 0;
+  }
+
+  .info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 10px;
+    background: #f7fafd;
+    border-radius: 10px;
+  }
+
+  .info-item dt {
+    font-size: 0.78rem;
+    color: #60758a;
+  }
+
+  .info-item dd {
+    margin: 0;
+    font-size: 1rem;
+    color: #1b2d3d;
+    font-weight: 600;
+  }
+
+  .facility-wrap {
+    margin-top: 16px;
+  }
+
+  .facility-wrap strong {
+    display: block;
+    margin-bottom: 8px;
+    color: #153b5d;
+  }
+
+  .facility-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .facility {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #edf5ff;
+    color: #225290;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .facility.pet {
+    background: #edf9f0;
+    color: #1f7a47;
+  }
+
+  .facility.barrier {
+    background: #eef3ff;
+    color: #3457a1;
+  }
+
+  .empty-box {
+    background: #ffffff;
+    border: 1px solid #dfe8ee;
+    border-radius: 14px;
+    padding: 28px 20px;
+    text-align: center;
+    color: #2f4354;
+  }
+
+  .empty-box p {
+    margin: 0 0 18px;
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+
+  .action-link {
+    display: inline-block;
+    margin: 0 8px 0 0;
+    padding: 10px 16px;
+    background: #0b4d87;
+    color: #fff;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .action-link.secondary {
+    background: #e6edf4;
+    color: #23415e;
+  }
+
+  .footer-links {
+    margin-top: 18px;
+  }
+
+  @media (max-width: 640px) {
+    .info-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .card-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>
+
+<h2 class="result-header">避難所検索結果</h2>
 
 {% if results %}
-  <ul>
+  <div class="result-summary">{{ results|length }}件の避難所が見つかりました。</div>
+  <div class="results-list">
     {% for shelter in results %}
-    <li>{{ shelter.name }}</li>
+      {% set address = shelter.get('address', '住所未登録') %}
+      {% set status = shelter.get('status', '未設定') %}
+      {% set capacity = shelter.get('capacity', 0) %}
+      {% set current = shelter.get('current_evacuees', 0) %}
+      {% set percent = 0 if not capacity else ((current / capacity) * 100) %}
+      {% set congestion = '満員' if capacity and current >= capacity else ('混雑' if percent >= 70 else '空きあり') %}
+      {% set congestion_class = 'status-full' if capacity and current >= capacity else ('status-busy' if percent >= 70 else 'status-available') %}
+      {% set facilities = shelter.get('facilities') %}
+      {% if facilities is string %}
+        {% set facilities = [facilities] %}
+      {% elif facilities is not iterable %}
+        {% set facilities = ['設備情報なし'] %}
+      {% endif %}
+
+      <article class="shelter-card">
+        <div class="card-header">
+          <div>
+            <div class="status-badge status-available">{{ status }}</div>
+            <h3>{{ shelter.name }}</h3>
+          </div>
+          <span class="status-badge {{ congestion_class }}">{{ congestion }}</span>
+        </div>
+
+        <dl class="info-grid">
+          <div class="info-item">
+            <dt>住所</dt>
+            <dd>{{ address }}</dd>
+          </div>
+          <div class="info-item">
+            <dt>開設状況</dt>
+            <dd>{{ status }}</dd>
+          </div>
+          <div class="info-item">
+            <dt>収容人数</dt>
+            <dd>{{ capacity }}人</dd>
+          </div>
+          <div class="info-item">
+            <dt>現在の避難者数</dt>
+            <dd>{{ current }}人</dd>
+          </div>
+          <div class="info-item">
+            <dt>混雑状況</dt>
+            <dd>{{ congestion }}</dd>
+          </div>
+          <div class="info-item">
+            <dt>空き状況</dt>
+            <dd>{{ 0 if not capacity else ((capacity - current) if current < capacity else 0) }}人</dd>
+          </div>
+        </dl>
+
+        <div class="facility-wrap">
+          <strong>設備情報</strong>
+          <div class="facility-list">
+            {% for facility in facilities %}
+              {% if facility == 'ペット可' or 'ペット' in facility %}
+                <span class="facility pet">🐾 {{ facility }}</span>
+              {% elif facility == 'バリアフリー' or 'バリアフリー' in facility %}
+                <span class="facility barrier">♿ {{ facility }}</span>
+              {% elif facility == '車いす対応' or '車いす' in facility %}
+                <span class="facility">🦽 {{ facility }}</span>
+              {% else %}
+                <span class="facility">{{ facility }}</span>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      </article>
     {% endfor %}
-  </ul>
+  </div>
 {% else %}
-  <p>該当する避難所が見つかりませんでした</p>
+  <div class="empty-box">
+    <p>条件に合う避難所がありません</p>
+    <a href="/shelter_search" class="action-link">検索画面に戻る</a>
+    <a href="/" class="action-link secondary">トップページへ戻る</a>
+  </div>
 {% endif %}
 
-<p>
+<p class="footer-links">
   <a href="/shelter_search">検索画面に戻る</a> |
   <a href="/">トップページへ戻る</a>
 </p>
