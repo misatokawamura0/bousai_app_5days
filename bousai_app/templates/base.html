@@ -4,31 +4,288 @@
   <meta charset="utf-8">
   <title>{% block title %}防災アプリ{% endblock %}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #edf1f3;
+      color: #1f2d3d;
+      font-family: "Segoe UI", "Yu Gothic UI", "Hiragino Sans", sans-serif;
+    }
+
+    .app-header {
+      height: 74px;
+      background: linear-gradient(180deg, #0a4e8a 0%, #0b4b85 100%);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      box-shadow: 0 2px 0 rgba(0,0,0,0.08);
+    }
+
+    .brand {
+      color: #ffffff;
+      font-size: clamp(1.8rem, 2vw, 2.3rem);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-decoration: none;
+    }
+
+    .menu-button {
+      width: 42px;
+      height: 42px;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      position: relative;
+      padding: 0;
+    }
+
+    .menu-button span,
+    .menu-button::before,
+    .menu-button::after {
+      position: absolute;
+      left: 9px;
+      right: 9px;
+      height: 3px;
+      background: #fff;
+      border-radius: 2px;
+      content: "";
+    }
+
+    .menu-button span { top: 19px; }
+    .menu-button::before { top: 11px; }
+    .menu-button::after { top: 27px; }
+
+    .app-main {
+      max-width: 980px;
+      margin: 26px auto 0;
+      padding: 0 16px 40px;
+    }
+
+    .page-card {
+      background: #f4f7f8;
+      border: 1px solid #dfe8ee;
+      border-radius: 18px;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+      padding: 20px 24px 24px;
+      margin-bottom: 26px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: clamp(1.1rem, 1.7vw, 1.8rem);
+      font-weight: 700;
+      color: #0b4d87;
+      margin: 0 0 18px;
+    }
+
+    .section-title .pin {
+      display: inline-flex;
+      width: 18px;
+      height: 18px;
+      align-items: center;
+      justify-content: center;
+      color: #0a5db3;
+      font-size: 1.2rem;
+    }
+
+    .map-wrap {
+      background: #dfeef7;
+      border: 1px solid #d2e1ec;
+      border-radius: 14px;
+      overflow: hidden;
+      height: 430px;
+      position: relative;
+    }
+
+    #shelterMap {
+      width: 100%;
+      height: 100%;
+    }
+
+    .weather-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .weather-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: clamp(1.15rem, 1.9vw, 2rem);
+      font-weight: 700;
+      color: #0f4a87;
+    }
+
+    .weather-title .icon {
+      font-size: 1.5rem;
+    }
+
+    .refresh-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #12a063;
+      font-weight: 700;
+      font-size: 0.95rem;
+      background: transparent;
+      border: none;
+      padding: 0;
+    }
+
+    .status-box {
+      border-top: 1px solid #dbe3ea;
+      padding-top: 12px;
+      color: #36516a;
+      font-size: 1.05rem;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 10px 0;
+      font-size: 1.08rem;
+    }
+
+    .status-ok {
+      color: #1fa46d;
+      font-weight: 700;
+    }
+
+    .status-meta {
+      color: #627b90;
+      font-size: 0.95rem;
+      margin-top: 8px;
+    }
+
+    .nav-inline {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 0.95rem;
+    }
+
+    .nav-inline a {
+      color: #ffffff;
+      text-decoration: none;
+      opacity: 0.9;
+    }
+
+    .menu-button {
+      display: none;
+    }
+
+    .nav-panel {
+      display: none;
+    }
+
+    @media (max-width: 640px) {
+      .nav-inline {
+        display: none;
+      }
+
+      .menu-button {
+        display: block;
+      }
+
+      .nav-panel {
+        display: none;
+        position: absolute;
+        top: 74px;
+        left: 16px;
+        right: 16px;
+        background: rgba(11, 75, 133, 0.98);
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        padding: 12px 14px;
+        z-index: 10;
+      }
+
+      .nav-panel.open {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .nav-panel a {
+        color: #ffffff;
+        text-decoration: none;
+        padding: 8px 6px;
+        border-bottom: 1px solid rgba(255,255,255,0.18);
+      }
+
+      .nav-panel a:last-child {
+        border-bottom: none;
+      }
+
+      .app-header {
+        padding: 0 18px;
+      }
+      .brand {
+        font-size: 1.7rem;
+      }
+      .map-wrap {
+        height: 330px;
+      }
+      .weather-header {
+        align-items: flex-start;
+        gap: 12px;
+        flex-direction: column;
+      }
+    }
+  </style>
 </head>
 <body>
-  <!-- ヘッダー -->
-  <h1>防災アプリ</h1>
+  <header class="app-header">
+    <a href="/" class="brand">防災アプリ</a>
+    <nav class="nav-inline" aria-label="メニュー">
+      <a href="/">ホーム</a>
+      <a href="/shelter_search">避難所検索</a>
+      <a href="/shelter_register">避難所登録</a>
+      <a href="/board">指示・発信ボード</a>
+      {% if session.logged_in %}
+        <a href="/logout">ログアウト</a>
+      {% else %}
+        <a href="/login">ログイン</a>
+      {% endif %}
+    </nav>
+    <button class="menu-button" type="button" aria-label="メニューを開く" aria-expanded="false"><span></span></button>
+  </header>
 
-  <!-- ナビゲーション -->
-  <nav>
-    <a href="/">ホーム</a> |
-    <a href="/shelter_search">避難所検索</a> |
-    <a href="/shelter_register">避難所登録</a> |
+  <nav class="nav-panel" aria-label="モバイルメニュー">
+    <a href="/">ホーム</a>
+    <a href="/shelter_search">避難所検索</a>
+    <a href="/shelter_register">避難所登録</a>
     <a href="/board">指示・発信ボード</a>
-    ｜
     {% if session.logged_in %}
-      ログイン中{% if session.username %}（{{ session.username }}）{% endif %}
       <a href="/logout">ログアウト</a>
     {% else %}
-      未ログイン
       <a href="/login">ログイン</a>
     {% endif %}
   </nav>
-  <hr>
 
-  <main>
-    <!-- ここに子テンプレートの content が入る -->
+  <main class="app-main">
     {% block content %}{% endblock %}
   </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const button = document.querySelector('.menu-button');
+      const panel = document.querySelector('.nav-panel');
+
+      if (button && panel) {
+        button.addEventListener('click', function () {
+          const isOpen = panel.classList.toggle('open');
+          button.setAttribute('aria-expanded', String(isOpen));
+        });
+      }
+    });
+  </script>
 </body>
 </html>
